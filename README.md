@@ -1,0 +1,2 @@
+# LiFFT
+Little FFT library
