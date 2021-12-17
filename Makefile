@@ -1,3 +1,4 @@
+CFLAGS = -g -O0
 CFLAGS = -O3 -ffast-math
 LDLIBS = -lm
 
