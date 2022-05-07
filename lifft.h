@@ -43,16 +43,16 @@ typedef LIFFT_FLOAT_TYPE lifft_float_t;
 
 #ifdef LIFFT_IMPLEMENTATION
 
-static void _lifft_process(lifft_complex_t* out, size_t len){
+static void _lifft_process(lifft_complex_t* x, size_t len){
 	for(int stride = 1; stride < len; stride *= 2){
 		lifft_complex_t wm = lifft_cispi(-0.5/stride);
 		for(int i = 0; i < len; i += 2*stride){
 			lifft_complex_t w = lift_complex(1, 0);
 			for(int j = 0; j < stride; j++){
 				size_t idx0 = i + j, idx1 = idx0 + stride;
-				lifft_complex_t p = out[idx0], q = lifft_cmul(w, out[idx1]);
-				out[idx0] = lifft_cadd(p, q);
-				out[idx1] = lifft_csub(p, q);
+				lifft_complex_t p = x[idx0], q = lifft_cmul(w, x[idx1]);
+				x[idx0] = lifft_cadd(p, q);
+				x[idx1] = lifft_csub(p, q);
 				w = lifft_cmul(w, wm);
 			}
 		}
@@ -82,18 +82,27 @@ static inline size_t _lifft_reverse_bits24(size_t n, unsigned bits){
 	return rev >> (24 - bits);
 }
 
-void lifft_forward_complex(lifft_complex_t* x, lifft_complex_t* out, size_t len){
+void lifft_forward_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, lifft_complex_t* tmp, size_t len){
+	if(stride_in == 0) stride_in = 1;
+	if(stride_out == 0) stride_out = 1;
+	if(tmp == NULL) tmp = alloca(len*sizeof(lifft_complex_t));
+	
 	unsigned bits = _lifft_bits(len);
-	for(int i = 0; i < len; i++) out[_lifft_reverse_bits24(i, bits)] = x[i];
-	_lifft_process(out, len);
+	for(int i = 0; i < len; i++) tmp[_lifft_reverse_bits24(i, bits)] = x_in[i*stride_in];
+	_lifft_process(tmp, len);
+	for(int i = 0; i < len; i++) x_out[i*stride_out] = tmp[i];
 }
 
-void lifft_inverse_complex(lifft_complex_t* x, lifft_complex_t* out, size_t len){
+void lifft_inverse_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, lifft_complex_t* tmp, size_t len){
+	if(stride_in == 0) stride_in = 1;
+	if(stride_out == 0) stride_out = 1;
+	if(tmp == NULL) tmp = alloca(len*sizeof(lifft_complex_t));
+	
 	unsigned bits = _lifft_bits(len);
 	lifft_complex_t scale = lift_complex(1.0/len, 0);
-	for(int i = 0; i < len; i++) out[_lifft_reverse_bits24(i, bits)] = lifft_conj(lifft_cmul(x[i], scale));
-	_lifft_process(out, len);
-	for(int i = 0; i < len; i++) out[i] = lifft_conj(out[i]);
+	for(int i = 0; i < len; i++) tmp[_lifft_reverse_bits24(i, bits)] = lifft_conj(lifft_cmul(x_in[i*stride_in], scale));
+	_lifft_process(tmp, len);
+	for(int i = 0; i < len; i++) x_out[i*stride_out] = lifft_conj(tmp[i]);
 }
 
 #endif

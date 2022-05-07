@@ -10,15 +10,21 @@
 
 void doit(size_t len){
 	lifft_complex_t x0[len], out[len], x1[len];
-	for(unsigned i = 0; i < len; i++) x0[i] = (lifft_complex_t){cosf(2*_LIFFT_PI*i/len)};
+	for(unsigned i = 0; i < len; i++) x0[i] = (lifft_complex_t){rand()};
 	
 	for(unsigned i = 0; i < 1000; i++){
-		lifft_forward_complex(x0, out, len);
-		lifft_inverse_complex(out, x1, len);
+		lifft_forward_complex(x0, 0, out, 0, NULL, len);
+		lifft_inverse_complex(out, 0, x1, 0, NULL, len);
 	}
 	
-	if(len <= 16){
-		for(unsigned i = 0; i < len; i++) printf("%2d: % .2f + % .2fi\n", i, lifft_creal(x1[i]), lifft_cimag(x1[i]));
+	if(len <= 64){
+		for(unsigned i = 0; i < len; i++){
+			// printf("%2d: % .2f + % .2fi\n", i, lifft_creal(x0[i]), lifft_cimag(x0[i]));
+			// printf("%2d: % .2f + % .2fi\n", i, lifft_creal(x1[i]), lifft_cimag(x1[i]));
+			
+			lifft_complex_t diff = lifft_csub(x0[i], x1[i]);
+			printf("%2d: %e + %ei\n", i, lifft_creal(diff), lifft_cimag(diff));
+		}
 	}
 	
 	double err = 0;
@@ -27,7 +33,7 @@ void doit(size_t len){
 }
 
 int main(int argc, const char* argv[]){
-	doit(16);
+	doit(64);
 	doit(1 << 16);
 	
 	return EXIT_SUCCESS;
