@@ -17,7 +17,7 @@ typedef LIFFT_FLOAT_TYPE lifft_float_t;
 	#include <complex.h>
 	typedef complex LIFFT_FLOAT_TYPE lifft_complex_t;
 	
-	static inline lifft_complex_t lift_complex(lifft_float_t real, lifft_float_t imag){return real + imag*I;}
+	static inline lifft_complex_t lifft_complex(lifft_float_t real, lifft_float_t imag){return real + imag*I;}
 	static inline lifft_complex_t lifft_cadd(lifft_complex_t x, lifft_complex_t y){return x + y;}
 	static inline lifft_complex_t lifft_csub(lifft_complex_t x, lifft_complex_t y){return x - y;}
 	static inline lifft_complex_t lifft_cmul(lifft_complex_t x, lifft_complex_t y){return x*y;}
@@ -29,35 +29,19 @@ typedef LIFFT_FLOAT_TYPE lifft_float_t;
 	static inline lifft_complex_t lifft_cispi(lifft_complex_t x){return cexp((2*_LIFFT_PI*I)*x);}
 #elif !defined(LIFFT_COMPLEX_TYPE)
 	typedef struct {lifft_float_t real, imag;} lifft_complex_t;
-	static inline lifft_complex_t lift_complex(lifft_float_t real, lifft_float_t imag){lifft_complex_t res = {real, imag}; return res;}
-	static inline lifft_complex_t lifft_cadd(lifft_complex_t x, lifft_complex_t y){return lift_complex(x.real + y.real, x.imag + y.imag);}
-	static inline lifft_complex_t lifft_csub(lifft_complex_t x, lifft_complex_t y){return lift_complex(x.real - y.real, x.imag - y.imag);}
-	static inline lifft_complex_t lifft_cmul(lifft_complex_t x, lifft_complex_t y){return lift_complex(x.real*y.real - x.imag*y.imag, x.real*y.imag + x.imag*y.real);}
-	static inline lifft_complex_t lifft_cdiv(lifft_complex_t x, lifft_complex_t y){return lift_complex((x.real*y.real + x.imag*y.imag)/(y.real*y.real + y.imag*y.imag), (x.imag*y.real - x.real*y.imag)/(y.real*y.real + y.imag*y.imag));}
-	static inline lifft_complex_t lifft_conj(lifft_complex_t x){return lift_complex(x.real, -x.imag);}
+	static inline lifft_complex_t lifft_complex(lifft_float_t real, lifft_float_t imag){lifft_complex_t res = {real, imag}; return res;}
+	static inline lifft_complex_t lifft_cadd(lifft_complex_t x, lifft_complex_t y){return lifft_complex(x.real + y.real, x.imag + y.imag);}
+	static inline lifft_complex_t lifft_csub(lifft_complex_t x, lifft_complex_t y){return lifft_complex(x.real - y.real, x.imag - y.imag);}
+	static inline lifft_complex_t lifft_cmul(lifft_complex_t x, lifft_complex_t y){return lifft_complex(x.real*y.real - x.imag*y.imag, x.real*y.imag + x.imag*y.real);}
+	static inline lifft_complex_t lifft_cdiv(lifft_complex_t x, lifft_complex_t y){return lifft_complex((x.real*y.real + x.imag*y.imag)/(y.real*y.real + y.imag*y.imag), (x.imag*y.real - x.real*y.imag)/(y.real*y.real + y.imag*y.imag));}
+	static inline lifft_complex_t lifft_conj(lifft_complex_t x){return lifft_complex(x.real, -x.imag);}
 	static inline lifft_float_t lifft_cabs(lifft_complex_t x){return sqrt(x.real*x.real + x.imag*x.imag);}
 	static inline lifft_float_t lifft_creal(lifft_complex_t x){return x.real;}
 	static inline lifft_float_t lifft_cimag(lifft_complex_t x){return x.imag;}
-	static inline lifft_complex_t lifft_cispi(lifft_float_t x){return lift_complex(cos(2*_LIFFT_PI*x), sin(2*_LIFFT_PI*x));}
+	static inline lifft_complex_t lifft_cispi(lifft_float_t x){return lifft_complex(cos(2*_LIFFT_PI*x), sin(2*_LIFFT_PI*x));}
 #endif
 
 #ifdef LIFFT_IMPLEMENTATION
-
-static void _lifft_process(lifft_complex_t* x, size_t len){
-	for(int stride = 1; stride < len; stride *= 2){
-		lifft_complex_t wm = lifft_cispi(-0.5/stride);
-		for(int i = 0; i < len; i += 2*stride){
-			lifft_complex_t w = lift_complex(1, 0);
-			for(int j = 0; j < stride; j++){
-				size_t idx0 = i + j, idx1 = idx0 + stride;
-				lifft_complex_t p = x[idx0], q = lifft_cmul(w, x[idx1]);
-				x[idx0] = lifft_cadd(p, q);
-				x[idx1] = lifft_csub(p, q);
-				w = lifft_cmul(w, wm);
-			}
-		}
-	}
-}
 
 static unsigned _lifft_bits(size_t len){
 	unsigned bits = log2(len);
@@ -66,7 +50,8 @@ static unsigned _lifft_bits(size_t len){
 	return bits;
 }
 
-static inline size_t _lifft_reverse_bits24(size_t n, unsigned bits){
+// Reverse bits in an integer of up to 24 bits.
+static inline size_t _lifft_rev_bits24(size_t n, unsigned bits){
 	static const uint8_t REV[] = {
 		0x00, 0x20, 0x10, 0x30, 0x08, 0x28, 0x18, 0x38, 0x04, 0x24, 0x14, 0x34, 0x0C, 0x2C, 0x1C, 0x3C,
 		0x02, 0x22, 0x12, 0x32, 0x0A, 0x2A, 0x1A, 0x3A, 0x06, 0x26, 0x16, 0x36, 0x0E, 0x2E, 0x1E, 0x3E,
@@ -82,27 +67,72 @@ static inline size_t _lifft_reverse_bits24(size_t n, unsigned bits){
 	return rev >> (24 - bits);
 }
 
-void lifft_forward_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, lifft_complex_t* tmp, size_t len){
+// Cooley Tukey FFT algorithm.
+static void _lifft_process(lifft_complex_t* x, size_t len){
+	for(int stride = 1; stride < len; stride *= 2){
+		lifft_complex_t wm = lifft_cispi(-0.5/stride);
+		for(int i = 0; i < len; i += 2*stride){
+			lifft_complex_t w = lifft_complex(1, 0);
+			for(int j = 0; j < stride; j++){
+				size_t idx0 = i + j, idx1 = idx0 + stride;
+				lifft_complex_t p = x[idx0], q = lifft_cmul(w, x[idx1]);
+				x[idx0] = lifft_cadd(p, q);
+				x[idx1] = lifft_csub(p, q);
+				w = lifft_cmul(w, wm);
+			}
+		}
+	}
+}
+
+// Compute the forward FFT on complex data.
+void lifft_forward_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t len){
 	if(stride_in == 0) stride_in = 1;
 	if(stride_out == 0) stride_out = 1;
-	if(tmp == NULL) tmp = alloca(len*sizeof(lifft_complex_t));
+	lifft_complex_t* tmp = alloca(len*sizeof(lifft_complex_t));
 	
 	unsigned bits = _lifft_bits(len);
-	for(int i = 0; i < len; i++) tmp[_lifft_reverse_bits24(i, bits)] = x_in[i*stride_in];
+	for(int i = 0; i < len; i++) tmp[_lifft_rev_bits24(i, bits)] = x_in[i*stride_in];
 	_lifft_process(tmp, len);
 	for(int i = 0; i < len; i++) x_out[i*stride_out] = tmp[i];
 }
 
-void lifft_inverse_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, lifft_complex_t* tmp, size_t len){
+// Compute the inverse FFT on complex data.
+void lifft_inverse_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t len){
 	if(stride_in == 0) stride_in = 1;
 	if(stride_out == 0) stride_out = 1;
-	if(tmp == NULL) tmp = alloca(len*sizeof(lifft_complex_t));
+	lifft_complex_t* tmp = alloca(len*sizeof(lifft_complex_t));
 	
 	unsigned bits = _lifft_bits(len);
-	lifft_complex_t scale = lift_complex(1.0/len, 0);
-	for(int i = 0; i < len; i++) tmp[_lifft_reverse_bits24(i, bits)] = lifft_conj(lifft_cmul(x_in[i*stride_in], scale));
+	lifft_complex_t scale = lifft_complex(1.0/len, 0);
+	for(int i = 0; i < len; i++) tmp[_lifft_rev_bits24(i, bits)] = lifft_conj(lifft_cmul(x_in[i*stride_in], scale));
 	_lifft_process(tmp, len);
 	for(int i = 0; i < len; i++) x_out[i*stride_out] = lifft_conj(tmp[i]);
+}
+
+// Compute the forward DCT.
+void lifft_forward_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t len){
+	if(stride_in == 0) stride_in = 1;
+	if(stride_out == 0) stride_out = 1;
+	lifft_complex_t* tmp = alloca(len*sizeof(lifft_complex_t));
+	
+	unsigned bits = _lifft_bits(len);
+	for(int i = 0; i < len/2; i++){
+		int idx = _lifft_rev_bits24(i, bits);
+		lifft_float_t xe = (x_in + 0)[2*stride_in*i], xo = (x_in + 1)[2*stride_in*i];
+		tmp[idx] = lifft_complex(xe, xo), tmp[len - idx - 1] = lifft_complex(xo, xe);
+	}
+	
+	_lifft_process(tmp, len);
+	
+	lifft_complex_t w = lifft_complex(1, 0), wm = lifft_cispi(-0.25/len);
+	for(int i0 = 0; i0 < len; i0++){
+		int i1 = -i0 & (len - 1);
+		lifft_complex_t Xe = lifft_cmul(lifft_cadd(tmp[i0], lifft_conj(tmp[i1])), lifft_complex(0.5, -0.0));
+		lifft_complex_t Xo = lifft_cmul(lifft_csub(tmp[i0], lifft_conj(tmp[i1])), lifft_complex(0.0, -0.5));
+		lifft_complex_t X = lifft_cmul(lifft_cadd(Xe, lifft_cmul(Xo, lifft_cmul(w, w))), w);
+		x_out[i0*stride_out] = lifft_creal(X);
+		w = lifft_cmul(w, wm);
+	}
 }
 
 #endif
