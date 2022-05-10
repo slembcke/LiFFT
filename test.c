@@ -93,8 +93,8 @@ void dctit(size_t len){
 	for(unsigned i = 0; i < len; i++) x0[i] = rand();
 	
 	for(unsigned i = 0; i < 1000; i++){
-		lifft_forward_dct(x0, 0, X, 0, len);
-		lifft_inverse_dct(X, 0, x1, 0, len);
+		lifft_forward_dct(x0, 1, X, 1, len);
+		lifft_inverse_dct(X, 1, x1, 1, len);
 	}
 	
 	if(len <= 64){
@@ -116,21 +116,22 @@ int main(int argc, const char* argv[]){
 	// doit(32);
 	// doit(1 << 16);
 	
-	dctit(32);
-	dctit(1 << 16);
+	// dctit(32);
+	// dctit(1 << 16);
 	
-	// lifft_float_t x0[16] = {
-	// 	0.70203658, 0.30785784, 0.80697642, 0.2063156 ,
-	// 	0.74611309, 0.44949445, 0.58790534, 0.94034123,
-	// 	0.86815133, 0.78308922, 0.51704855, 0.58557402,
-	// 	0.49798021, 0.43429341, 0.52435585, 0.47455634,
-	// }, X[16], x1[16];
-	// lifft_forward_dct(x0, 0, X, 0, 16);
+	lifft_float_t x0[16] = {
+		0.70203658, 0.30785784, 0.80697642, 0.2063156 ,
+		0.74611309, 0.44949445, 0.58790534, 0.94034123,
+		0.86815133, 0.78308922, 0.51704855, 0.58557402,
+		0.49798021, 0.43429341, 0.52435585, 0.47455634,
+	}, X[16], x1[16];
+	lifft_forward_dct(x0, 1, X, 1, 16);
 	// lifft_inverse_dct(X, 0, x1, 0, 16);
 	
-	// for(int i = 0; i < 16; i++){
-	// 	printf("%f\n", x0[i] - x1[i]);
-	// }
+	for(int i = 0; i < 16; i++){
+		printf("%f\n", X[i]);
+		// printf("%f\n", x0[i] - x1[i]);
+	}
 	
 	return EXIT_SUCCESS;
 }

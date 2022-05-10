@@ -67,7 +67,8 @@ static inline size_t _lifft_rev_bits24(size_t n, unsigned bits){
 	return rev >> (24 - bits);
 }
 
-// Cooley Tukey FFT algorithm.
+// Cooley Tukey FFT algorithm that processes complex signal 'x' in place.
+// 'x' is expected in byte-reversed index order, but shuffled back to linear order after calling.
 static void _lifft_process(lifft_complex_t* x, size_t len){
 	for(int stride = 1; stride < len; stride *= 2){
 		lifft_complex_t wm = lifft_cispi(-0.5/stride);
@@ -85,37 +86,37 @@ static void _lifft_process(lifft_complex_t* x, size_t len){
 }
 
 // Compute the forward FFT on complex data.
+// 'len' must be a power of two.
 void lifft_forward_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t len){
-	if(stride_in == 0) stride_in = 1;
-	if(stride_out == 0) stride_out = 1;
 	lifft_complex_t* tmp = alloca(len*sizeof(lifft_complex_t));
-	
 	unsigned bits = _lifft_bits(len);
+	
+	// Copy to tmp[] in shufled order, apply the FFT, then copy to the output.
 	for(int i = 0; i < len; i++) tmp[_lifft_rev_bits24(i, bits)] = x_in[i*stride_in];
 	_lifft_process(tmp, len);
 	for(int i = 0; i < len; i++) x_out[i*stride_out] = tmp[i];
 }
 
 // Compute the inverse FFT on complex data.
+// 'len' must be a power of two.
 void lifft_inverse_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t len){
-	if(stride_in == 0) stride_in = 1;
-	if(stride_out == 0) stride_out = 1;
 	lifft_complex_t* tmp = alloca(len*sizeof(lifft_complex_t));
-	
 	unsigned bits = _lifft_bits(len);
+	
+	// Compute iFFT via iFFT(x) = conj(FFT(conj(x)))/len
 	lifft_complex_t scale = lifft_complex(1.0/len, 0);
 	for(int i = 0; i < len; i++) tmp[_lifft_rev_bits24(i, bits)] = lifft_conj(lifft_cmul(x_in[i*stride_in], scale));
 	_lifft_process(tmp, len);
 	for(int i = 0; i < len; i++) x_out[i*stride_out] = lifft_conj(tmp[i]);
 }
 
-// Compute the forward DCT.
+// Compute the forward DCTII via a real valued FFT
+// 'len' must be a power of two.
 void lifft_forward_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t len){
-	if(stride_in == 0) stride_in = 1;
-	if(stride_out == 0) stride_out = 1;
 	lifft_complex_t* tmp = alloca(len*sizeof(lifft_complex_t));
-	
 	unsigned bits = _lifft_bits(len);
+	
+	// Pack data for DCTII as even/odd fields.
 	for(int i = 0; i < len/2; i++){
 		int idx = _lifft_rev_bits24(i, bits);
 		lifft_float_t xe = (x_in + 0)[2*stride_in*i], xo = (x_in + 1)[2*stride_in*i];
@@ -124,6 +125,7 @@ void lifft_forward_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_o
 	
 	_lifft_process(tmp, len);
 	
+	// Unpack the DCTII results using the conjugate symmetry property of the FFT.
 	lifft_complex_t w = lifft_complex(1, 0), wm = lifft_cispi(-0.25/len);
 	for(int i0 = 0; i0 < len; i0++){
 		int i1 = -i0 & (len - 1);
