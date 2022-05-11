@@ -1,5 +1,5 @@
 CFLAGS = -g -O0
-CFLAGS = -O3 -ffast-math
+CFLAGS = -O3
 LDLIBS = -lm
 
 default: test
