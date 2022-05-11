@@ -7,4 +7,4 @@ default: test
 clean:
 	-rm *.o test
 
-test: test.o lifft.h
+test: test.o ../lifft.h

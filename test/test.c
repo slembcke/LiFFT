@@ -6,7 +6,7 @@
 // #define LIFFT_FLOAT_TYPE float
 // #define LIFFT_STD_COMPLEX
 #define LIFFT_IMPLEMENTATION
-#include "lifft.h"
+#include "../lifft.h"
 
 // void lifft_forward_real(lifft_float_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, lifft_complex_t* tmp, size_t len){
 // 	if(stride_in == 0) stride_in = 1;
