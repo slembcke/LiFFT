@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
+#include <alloca.h>
 
 #ifndef LIFFT_NO_STDLIB
 	#include <math.h>
@@ -41,6 +42,28 @@ typedef LIFFT_FLOAT_TYPE lifft_float_t;
 	static inline lifft_float_t lifft_cimag(lifft_complex_t x){return x.imag;}
 	static inline lifft_complex_t lifft_cispi(lifft_float_t x){return lifft_complex(cos(2*_LIFFT_PI*x), sin(2*_LIFFT_PI*x));}
 #endif
+
+// Compute the forward FFT on complex data.
+// 'n' must be a power of two.
+void lifft_forward_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t n);
+
+// Compute the inverse FFT on complex data.
+// 'n' must be a power of two.
+void lifft_inverse_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t n);
+
+// Compute the forward DCT2 via a real valued FFT
+// 'n' must be a power of two.
+void lifft_forward_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n);
+
+// Compute the inverse DCT2 via real valued iFFT.
+// 'n' must be a power of two.
+void lifft_inverse_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n);
+
+#define LIFFT_APPLY_2D(func, x_in, x_out, n) { \
+	typeof(*x_in)* _tmp_ = alloca(n*n*sizeof(*x_in)); \
+	for(int i = 0; i < n; i++) func( x_in + i*n, 1, _tmp_ + i, n, n); \
+	for(int i = 0; i < n; i++) func(_tmp_ + i*n, 1, x_out + i, n, n); \
+}
 
 #ifdef LIFFT_IMPLEMENTATION
 
@@ -88,11 +111,9 @@ static void _lifft_process(lifft_complex_t* x, size_t n){
 	}
 }
 
-// Compute the forward FFT on complex data.
-// 'n' must be a power of two.
 void lifft_forward_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t n){
 	unsigned bits = _lifft_setup(n, stride_in, stride_out);
-	lifft_complex_t* tmp = alloca(n*sizeof(lifft_complex_t));
+	lifft_complex_t* tmp = (lifft_complex_t*)alloca(n*sizeof(lifft_complex_t));
 	
 	// Copy to tmp[] in shufled order, apply the FFT, then copy to the output.
 	for(int i = 0; i < n; i++) tmp[_lifft_rev_bits24(i, bits)] = x_in[i*stride_in];
@@ -100,11 +121,9 @@ void lifft_forward_complex(lifft_complex_t* x_in, size_t stride_in, lifft_comple
 	for(int i = 0; i < n; i++) x_out[i*stride_out] = tmp[i];
 }
 
-// Compute the inverse FFT on complex data.
-// 'n' must be a power of two.
 void lifft_inverse_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t n){
 	unsigned bits = _lifft_setup(n, stride_in, stride_out);
-	lifft_complex_t* tmp = alloca(n*sizeof(lifft_complex_t));
+	lifft_complex_t* tmp = (lifft_complex_t*)alloca(n*sizeof(lifft_complex_t));
 	
 	// Compute iFFT via iFFT(x) = conj(FFT(conj(x)))/n
 	lifft_complex_t scale = lifft_complex(1.0/n, 0);
@@ -113,13 +132,11 @@ void lifft_inverse_complex(lifft_complex_t* x_in, size_t stride_in, lifft_comple
 	for(int i = 0; i < n; i++) x_out[i*stride_out] = lifft_conj(tmp[i]);
 }
 
-// Compute the forward DCTII via a real valued FFT
-// 'n' must be a power of two.
 void lifft_forward_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n){
 	unsigned bits = _lifft_setup(n, stride_in, stride_out);
-	lifft_complex_t* tmp = alloca(n*sizeof(lifft_complex_t));
+	lifft_complex_t* tmp = (lifft_complex_t*)alloca(n*sizeof(lifft_complex_t));
 	
-	// Pack data for DCTII as even/odd fields.
+	// Pack data for DCT2 as even/odd fields.
 	for(int i = 0; i < n/2; i++){
 		int idx = _lifft_rev_bits24(i, bits);
 		lifft_float_t xe = x_in[stride_in*(2*i + 0)], xo = x_in[stride_in*(2*i + 1)];
@@ -128,7 +145,7 @@ void lifft_forward_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_o
 	
 	_lifft_process(tmp, n);
 	
-	// Unpack the DCTII results using the even/odd symmetry property of the FFT.
+	// Unpack the DCT2 results using the even/odd symmetry property of the FFT.
 	lifft_complex_t w = lifft_complex(1, 0), wm = lifft_cispi(-0.25/n);
 	for(int i = 0; i < n; i++){
 		lifft_complex_t X0 = tmp[i], X1 = lifft_conj(tmp[-i & (n - 1)]);
@@ -138,13 +155,11 @@ void lifft_forward_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_o
 	}
 }
 
-// Compute the inverse DCTII via real valued iFFT.
-// 'n' must be a power of two.
 void lifft_inverse_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n){
 	unsigned bits = _lifft_setup(n, stride_in, stride_out);
-	lifft_complex_t* tmp = alloca(n*sizeof(lifft_complex_t));
+	lifft_complex_t* tmp = (lifft_complex_t*)alloca(n*sizeof(lifft_complex_t));
 	
-	// Pack the DCTII data using... lots of math.
+	// Pack the DCT2 data using... lots of math.
 	lifft_complex_t wm = lifft_cispi(0.25/n), w = wm;
 	for(int i = 1; i < n/2; i++){
 		lifft_complex_t w3 = lifft_cmul(lifft_cmul(w, w), w);

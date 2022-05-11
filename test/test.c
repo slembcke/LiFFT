@@ -8,22 +8,6 @@
 #define LIFFT_IMPLEMENTATION
 #include "../lifft.h"
 
-typedef void lifft_func(lifft_complex_t*, size_t, lifft_complex_t*, size_t, size_t);
-void lifft_apply_2d(lifft_func func, lifft_complex_t* x_in, lifft_complex_t* x_out, size_t n){
-	lifft_complex_t* tmp = alloca(n*n*sizeof(lifft_complex_t));
-	for(int i = 0; i < n; i++) func(x_in + i*n, 1,   tmp + i, n, n);
-	for(int i = 0; i < n; i++) func( tmp + i*n, 1, x_out + i, n, n);
-}
-
-typedef void lifft_func_(lifft_float_t*, size_t, lifft_float_t*, size_t, size_t);
-void lifft_apply_2d_(lifft_func_ func, lifft_float_t* x_in, lifft_float_t* x_out, size_t n){
-	lifft_float_t* tmp = alloca(n*n*sizeof(lifft_float_t));
-	for(int i = 0; i < n; i++) func(x_in + i*n, 1,   tmp + i, n, n);
-	for(int i = 0; i < n; i++) func( tmp + i*n, 1, x_out + i, n, n);
-}
-
-// -----------
-
 void fft_it(size_t n, int iterations){
 	lifft_complex_t x0[n], X[n], x1[n];
 	for(unsigned i = 0; i < n; i++) x0[i] = lifft_complex((float)rand()/(float)RAND_MAX, 0);
@@ -35,7 +19,7 @@ void fft_it(size_t n, int iterations){
 	
 	double err = 0;
 	for(unsigned i = 0; i < n; i++) err += lifft_cabs(lifft_csub(x0[i], x1[i]));
-	printf("err: %f\n", err);
+	printf("err on FFT size %9d: %e\n", (int)n, err);
 }
 
 void fft_it_2d(size_t n, int iterations){
@@ -43,13 +27,13 @@ void fft_it_2d(size_t n, int iterations){
 	for(unsigned i = 0; i < n*n; i++) x0[i] = lifft_complex((float)rand()/(float)RAND_MAX, 0);
 	
 	for(unsigned i = 0; i < iterations; i++){
-		lifft_apply_2d(lifft_forward_complex, x0, X, n);
-		lifft_apply_2d(lifft_inverse_complex, X, x1, n);
+		LIFFT_APPLY_2D(lifft_forward_complex, x0, X, n);
+		LIFFT_APPLY_2D(lifft_inverse_complex, X, x1, n);
 	}
 	
 	double err = 0;
 	for(unsigned i = 0; i < n*n; i++) err += lifft_cabs(lifft_csub(x0[i], x1[i]));
-	printf("err: %f\n", err);
+	printf("err on FFT size %3d x %3d: %e\n", (int)n, (int)n, err);
 }
 
 void dct_it(size_t n, int iterations){
@@ -63,7 +47,7 @@ void dct_it(size_t n, int iterations){
 	
 	double err = 0;
 	for(unsigned i = 0; i < n; i++) err += fabs(x0[i] - x1[i]);
-	printf("err: %f\n", err);
+	printf("err on DCT size %9d: %e\n", (int)n, err);
 }
 
 void dct_it_2d(size_t n, int iterations){
@@ -71,13 +55,13 @@ void dct_it_2d(size_t n, int iterations){
 	for(unsigned i = 0; i < n*n; i++) x0[i] = (float)rand()/(float)RAND_MAX;
 	
 	for(unsigned i = 0; i < iterations; i++){
-		lifft_apply_2d_(lifft_forward_dct, x0, X, n);
-		lifft_apply_2d_(lifft_inverse_dct, X, x1, n);
+		LIFFT_APPLY_2D(lifft_forward_dct, x0, X, n);
+		LIFFT_APPLY_2D(lifft_inverse_dct, X, x1, n);
 	}
 	
 	double err = 0;
 	for(unsigned i = 0; i < n*n; i++) err += fabs(x0[i] - x1[i]);
-	printf("err: %f\n", err);
+	printf("err on DCT size %3d x %3d: %e\n", (int)n, (int)n, err);
 }
 
 int main(int argc, const char* argv[]){
