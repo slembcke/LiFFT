@@ -77,6 +77,20 @@ int main(int argc, const char* argv[]){
 	dct_it_2d(32, iterations);
 	dct_it_2d(1 << 8, iterations);
 	
+	// unsigned n = 8;
+	// lifft_float_t xr[n];
+	// lifft_complex_t x[n], X0[n], X1[n];
+	// for(unsigned i = 0; i < n; i++){
+	// 	xr[i] = (float)rand()/(float)RAND_MAX;
+	// 	x[i] = lifft_complex(xr[i], 0);
+	// }
+	// // lifft_forward_complex(x, 1, X0, 1, n);
+	// lifft_forward_real(xr, 1, X1, 1, n);
+	
+	// for(unsigned i = 0; i < n; i++){
+	// 	printf("% 2d: %.3f -> %+.3f%+.3f\n", i, xr[i], X1[i]);
+	// }
+	
 	// lifft_float_t x0[16] = {
 	// 	0.70203658, 0.30785784, 0.80697642, 0.2063156 ,
 	// 	0.74611309, 0.44949445, 0.58790534, 0.94034123,
