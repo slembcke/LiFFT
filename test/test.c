@@ -10,11 +10,16 @@
 
 void fft_it(size_t n, int iterations){
 	lifft_complex_t x0[n], X[n], x1[n];
-	for(unsigned i = 0; i < n; i++) x0[i] = lifft_complex((float)rand()/(float)RAND_MAX, 0);
+	for(unsigned i = 0; i < n; i++){
+		x0[i] = lifft_complex((float)rand()/(float)RAND_MAX, 0);
+		x1[i] = lifft_complex(0, 0);
+	}
 	
 	for(unsigned i = 0; i < iterations; i++){
-		lifft_forward_complex(x0, 1, X, 1, n);
-		lifft_inverse_complex(X, 1, x1, 1, n);
+		lifft_forward_real(x0, 2, X, 1, n);
+		lifft_inverse_real(X, 1, x1, 2, n);
+		// lifft_forward_complex(x0, 1, X, 1, n);
+		// lifft_inverse_complex(X, 1, x1, 1, n);
 	}
 	
 	double err = 0;
@@ -77,33 +82,19 @@ int main(int argc, const char* argv[]){
 	dct_it_2d(32, iterations);
 	dct_it_2d(1 << 8, iterations);
 	
-	// unsigned n = 8;
-	// lifft_float_t xr[n];
-	// lifft_complex_t x[n], X0[n], X1[n];
-	// for(unsigned i = 0; i < n; i++){
-	// 	xr[i] = (float)rand()/(float)RAND_MAX;
-	// 	x[i] = lifft_complex(xr[i], 0);
-	// }
-	// // lifft_forward_complex(x, 1, X0, 1, n);
-	// lifft_forward_real(xr, 1, X1, 1, n);
+	unsigned n = 8;
+	lifft_complex_t x0[n], X[n], x1[n];
+	for(unsigned i = 0; i < n; i++) x0[i] = lifft_complex((float)rand()/(float)RAND_MAX, 0);
 	
-	// for(unsigned i = 0; i < n; i++){
-	// 	printf("% 2d: %.3f -> %+.3f%+.3f\n", i, xr[i], X1[i]);
-	// }
+	// lifft_forward_real(x0, 2, X, 1, n);
+	// lifft_inverse_real(X, 1, x1, 2, n);
 	
-	// lifft_float_t x0[16] = {
-	// 	0.70203658, 0.30785784, 0.80697642, 0.2063156 ,
-	// 	0.74611309, 0.44949445, 0.58790534, 0.94034123,
-	// 	0.86815133, 0.78308922, 0.51704855, 0.58557402,
-	// 	0.49798021, 0.43429341, 0.52435585, 0.47455634,
-	// }, x1[16];
-	// lifft_forward_dct(x0, 1, x1, 1, 16);
-	// lifft_inverse_dct(x1, 1, x1, 1, 16);
+	lifft_forward_dct(x0, 2, X, 2, n);
+	lifft_inverse_dct(X, 2, x1, 2, n);
 	
-	// for(int i = 0; i < 16; i++){
-	// 	// printf("%f\n", x0[i]);
-	// 	printf("%f\n", x0[i] - x1[i]);
-	// }
+	for(unsigned i = 0; i < n; i++){
+		printf("% 2d: %.3f %.3f -> %+.3f%+.3f -> %+.3f%+.3f\n", i, x0[i], X[i], x1[i]);
+	}
 	
 	return EXIT_SUCCESS;
 }

@@ -136,7 +136,7 @@ void lifft_forward_real(lifft_float_t* x_in, size_t stride_in, lifft_complex_t* 
 	unsigned bits = _lifft_setup(n, stride_in, stride_out) - 1;
 	lifft_complex_t* tmp = (lifft_complex_t*)alloca(n/2*sizeof(lifft_complex_t));
 	
-	// Copy evens into real, odds into imaginary.
+	// Copy as [evens + odds*im]
 	for(size_t i = 0; i < n/2; i++) tmp[_lifft_rev_bits24(i, bits)] = lifft_complex(x_in[(2*i + 0)*stride_in]/2, x_in[(2*i + 1)*stride_in]/2);
 	_lifft_process(tmp, n/2);
 	
@@ -144,26 +144,36 @@ void lifft_forward_real(lifft_float_t* x_in, size_t stride_in, lifft_complex_t* 
 	for(size_t i = 0; i <= n/4; i++){
 		// Unpack using even/odd fft symmetry
 		lifft_complex_t p = tmp[i], q = lifft_conj(tmp[-i & (n/2 - 1)]);
-		lifft_complex_t even = lifft_cadd(p, q), odd = lifft_cmul(lifft_csub(p, q), w);
+		lifft_complex_t xe = lifft_cadd(p, q), xo = lifft_cmul(lifft_csub(p, q), w);
 		// Apply final stage of Cooley Tukey
-		x_out[i*stride_out] = lifft_cadd(even, odd);
-		x_out[(n/2 - i)*stride_out] = lifft_conj(lifft_csub(even, odd));
+		x_out[i*stride_out] = lifft_cadd(xe, xo);
+		x_out[(n/2 - i)*stride_out] = lifft_conj(lifft_csub(xe, xo));
 		w = lifft_cmul(w, wm);
 	}
 }
 
 void lifft_inverse_real(lifft_complex_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n){
-	unsigned bits = _lifft_setup(n, stride_in, stride_out);
-	lifft_complex_t* tmp = (lifft_complex_t*)alloca(n*sizeof(lifft_complex_t));
+	unsigned bits = _lifft_setup(n, stride_in, stride_out) - 1;
+	lifft_complex_t* tmp = (lifft_complex_t*)alloca(n/2*sizeof(lifft_complex_t));
 	
-	// Compute iFFT via iFFT(x) = conj(FFT(conj(x)))/n
-	lifft_complex_t scale = lifft_complex((lifft_float_t)1.0/n, 0);
-	for(size_t i = 0; i <= n/2; i++){
-		tmp[_lifft_rev_bits24(i, bits)] = lifft_conj(lifft_cmul(x_in[i*stride_in], scale));
-		tmp[_lifft_rev_bits24(-i & (n - 1), bits)] = (lifft_cmul(x_in[i*stride_in], scale));
+	lifft_complex_t w = lifft_complex(0, 1), wm = lifft_cispi((lifft_float_t)2.0/n);
+	for(size_t i = 0; i <= n/4; i++){
+		// Calculate evens/odds from real fft symmetry
+		lifft_complex_t p = x_in[i*stride_in], q = lifft_conj(x_in[(n/2 - i)*stride_in]);
+		lifft_complex_t xe = lifft_cadd(p, q), xo = lifft_cmul(lifft_csub(p, q), w);
+		// Pack using even/odd symetry
+		tmp[_lifft_rev_bits24(i, bits)] = lifft_conj(lifft_cadd(xe, xo));
+		tmp[_lifft_rev_bits24(-i & (n/2 - 1), bits)] = lifft_csub(xe, xo);
+		w = lifft_cmul(w, wm);
 	}
-	_lifft_process(tmp, n);
-	for(size_t i = 0; i < n; i++) x_out[i*stride_out] = lifft_creal(tmp[i]);
+	
+	_lifft_process(tmp, n/2);
+	
+	// Extract evens from real and odd from imag
+	for(size_t i = 0; i < n/2; i++){
+		x_out[(2*i + 0)*stride_out] = +lifft_creal(tmp[i])/n;
+		x_out[(2*i + 1)*stride_out] = -lifft_cimag(tmp[i])/n;
+	}
 }
 
 void lifft_forward_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n){
