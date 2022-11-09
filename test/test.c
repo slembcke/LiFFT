@@ -86,15 +86,15 @@ int main(int argc, const char* argv[]){
 	lifft_complex_t x0[n], X[n], x1[n];
 	for(unsigned i = 0; i < n; i++) x0[i] = lifft_complex((float)rand()/(float)RAND_MAX, 0);
 	
-	lifft_forward_real(x0, 2, X, 1, n);
-	lifft_inverse_real(X, 1, x1, 2, n);
+	// lifft_forward_real(x0, 2, X, 1, n);
+	// lifft_inverse_real(X, 1, x1, 2, n);
 	
-	lifft_forward_dct(x0, 2, X, 2, n);
-	lifft_inverse_dct(X, 2, x1, 2, n);
+	// lifft_forward_dct2(x0, 2, X, 2, n);
+	// lifft_inverse_dct(X, 2, x1, 2, n);
 	
-	for(unsigned i = 0; i < n; i++){
-		printf("% 2d: %.3f %.3f -> %+.3f%+.3f -> %+.3f%+.3f\n", i, x0[i], X[i], x1[i]);
-	}
+	// for(unsigned i = 0; i < n; i++){
+	// 	printf("% 2d: %.3f %.3f -> %+.3f%+.3f -> %+.3f%+.3f\n", i, x0[i], X[i], x1[i]);
+	// }
 	
 	return EXIT_SUCCESS;
 }

@@ -177,24 +177,20 @@ void lifft_inverse_real(lifft_complex_t* x_in, size_t stride_in, lifft_float_t* 
 }
 
 void lifft_forward_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n){
-	unsigned bits = _lifft_setup(n, stride_in, stride_out);
-	lifft_complex_t* tmp = (lifft_complex_t*)alloca(n*sizeof(lifft_complex_t));
-	
-	// Pack data for DCT2 as even/odd fields.
-	for(size_t i = 0; i < n/2; i++){
-		size_t idx = _lifft_rev_bits24(i, bits);
-		lifft_float_t xe = x_in[stride_in*(2*i + 0)], xo = x_in[stride_in*(2*i + 1)];
-		tmp[idx] = lifft_complex(xe, xo), tmp[n - idx - 1] = lifft_complex(xo, xe);
+	lifft_float_t tmp[n];
+	for(unsigned i = 0; i < n/2; i++){
+		tmp[i] = x_in[(2*i)*stride_in];
+		tmp[n/2 + i] = x_in[(n - 2*i - 1)*stride_in];
 	}
 	
-	_lifft_process(tmp, n);
+	lifft_complex_t Xe[n/2 + 1];
+	lifft_forward_real(tmp, 1, Xe, 1, n);
 	
-	// Unpack the DCT2 results using the even/odd symmetry property of the FFT.
 	lifft_complex_t w = lifft_complex(1, 0), wm = lifft_cispi((lifft_float_t)-0.5/n);
-	for(size_t i = 0; i < n; i++){
-		lifft_complex_t p = tmp[i], q = lifft_conj(tmp[-i & (n - 1)]);
-		lifft_complex_t even = lifft_cadd(p, q), odd = lifft_cmul(lifft_csub(p, q), lifft_complex(0, -1));
-		x_out[i*stride_out] = lifft_creal(lifft_cmul(lifft_cadd(even, lifft_cmul(odd, lifft_cmul(w, w))), w))/2;
+	for(unsigned i = 0; i <= n/2; i++){
+		lifft_complex_t p = lifft_cmul(Xe[i], w);
+		x_out[(-i&(n - 1))*stride_out] = -2*lifft_cimag(p);
+		x_out[i*stride_out] = 2*lifft_creal(p);
 		w = lifft_cmul(w, wm);
 	}
 }
