@@ -43,13 +43,23 @@ typedef LIFFT_FLOAT_TYPE lifft_float_t;
 	static inline lifft_complex_t lifft_cispi(lifft_float_t x){return lifft_complex((lifft_float_t)cos(_LIFFT_PI*x), (lifft_float_t)sin(_LIFFT_PI*x));}
 #endif
 
-// Compute the forward FFT on complex data.
+// Compute the forward FFT on complex valued data.
 // 'n' must be a power of two.
 void lifft_forward_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t n);
 
-// Compute the inverse FFT on complex data.
+// Compute the inverse FFT on complex valued data.
 // 'n' must be a power of two.
 void lifft_inverse_complex(lifft_complex_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t n);
+
+// Compute the forward FFT on real valued data.
+// 'n' must be a power of two.
+// 'x_out' must be at least length n/2 + 1
+void lifft_forward_real(lifft_float_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t n);
+
+// Compute the inverse FFT on real valued data.
+// 'n' must be a power of two.
+// 'x_in' must be n/2 + 1 length
+void lifft_inverse_real(lifft_complex_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n);
 
 // Compute the forward DCT2 via a real valued FFT
 // 'n' must be a power of two.
@@ -132,7 +142,7 @@ void lifft_inverse_complex(lifft_complex_t* x_in, size_t stride_in, lifft_comple
 	for(size_t i = 0; i < n; i++) x_out[i*stride_out] = lifft_conj(tmp[i]);
 }
 
-void _lifft_extract_real(lifft_complex_t* x_in, lifft_complex_t* x_out, size_t stride_out, size_t n){
+static void _lifft_extract_real(lifft_complex_t* x_in, lifft_complex_t* x_out, size_t stride_out, size_t n){
 	lifft_complex_t w = lifft_complex(0, -1), wm = lifft_cispi((lifft_float_t)-2.0/n);
 	for(size_t i = 0; i <= n/4; i++){
 		// Unpack using even/odd fft symmetry
