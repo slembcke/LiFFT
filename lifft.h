@@ -207,9 +207,11 @@ void lifft_forward_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_o
 	}
 }
 
+// TODO this is quite the mess. See if I can compute this from the DCT III directly instead.
 void lifft_inverse_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n){
-	unsigned bits = _lifft_setup(n, stride_in, stride_out);
+	unsigned bits = _lifft_setup(n, stride_in, stride_out) - 1;
 	lifft_complex_t* tmp = (lifft_complex_t*)alloca((n/2 + 1)*sizeof(lifft_complex_t));
+	lifft_complex_t* tmp2 = (lifft_complex_t*)alloca((n/2 + 1)*sizeof(lifft_complex_t));
 	
 	lifft_complex_t wm = lifft_cispi((lifft_float_t)0.5/n), w = lifft_complex(0.5, 0);
 	tmp[0] = lifft_cmul(lifft_complex(x_in[0], 0), w);
