@@ -82,19 +82,19 @@ int main(int argc, const char* argv[]){
 	dct_it_2d(32, iterations);
 	dct_it_2d(1 << 8, iterations);
 	
-	unsigned n = 8;
-	lifft_complex_t x0[n], X[n], x1[n];
-	for(unsigned i = 0; i < n; i++) x0[i] = lifft_complex((float)rand()/(float)RAND_MAX, 0);
+	// unsigned n = 8;
+	// lifft_complex_t x0[n], X[n], x1[n];
+	// for(unsigned i = 0; i < n; i++) x0[i] = lifft_complex((float)rand()/(float)RAND_MAX, 0);
 	
-	lifft_forward_real(x0, 2, X, 1, n);
-	lifft_inverse_real(X, 1, x1, 2, n);
+	// lifft_forward_real(x0, 2, X, 1, n);
+	// lifft_inverse_real(X, 1, x1, 2, n);
 	
-	lifft_forward_dct(x0, 2, X, 2, n);
-	lifft_inverse_dct(X, 2, x1, 2, n);
+	// lifft_forward_dct((lifft_float_t*)x0, 2, (lifft_float_t*)X, 2, n);
+	// lifft_inverse_dct((lifft_float_t*)X, 2, (lifft_float_t*)x1, 2, n);
 	
-	for(unsigned i = 0; i < n; i++){
-		printf("% 2d: %.3f %.3f -> %+.3f%+.3f -> %+.3f%+.3f\n", i, x0[i], X[i], x1[i]);
-	}
+	// for(unsigned i = 0; i < n; i++){
+	// 	printf("% 2d: %.3f %.3f -> %+.3f%+.3f -> %+.3f%+.3f\n", i, x0[i], X[i], x1[i]);
+	// }
 	
 	return EXIT_SUCCESS;
 }
