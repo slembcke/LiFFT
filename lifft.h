@@ -132,6 +132,20 @@ void lifft_inverse_complex(lifft_complex_t* x_in, size_t stride_in, lifft_comple
 	for(size_t i = 0; i < n; i++) x_out[i*stride_out] = lifft_conj(tmp[i]);
 }
 
+void _lifft_extract_real(lifft_complex_t* x_in, lifft_complex_t* x_out, size_t stride_out, size_t n){
+	lifft_complex_t w = lifft_complex(0, -1), wm = lifft_cispi((lifft_float_t)-2.0/n);
+	for(size_t i = 0; i <= n/4; i++){
+		// Unpack using even/odd fft symmetry
+		lifft_complex_t p = x_in[i], q = lifft_conj(x_in[-i&(n/2 - 1)]);
+		lifft_complex_t xe = lifft_cadd(p, q), xo = lifft_cmul(lifft_csub(p, q), w);
+		w = lifft_cmul(w, wm);
+		
+		// Apply final stage of Cooley Tukey
+		x_out[i*stride_out] = lifft_cadd(xe, xo);
+		x_out[(n/2 - i)*stride_out] = lifft_conj(lifft_csub(xe, xo));
+	}
+}
+
 void lifft_forward_real(lifft_float_t* x_in, size_t stride_in, lifft_complex_t* x_out, size_t stride_out, size_t n){
 	unsigned bits = _lifft_setup(n, stride_in, stride_out) - 1;
 	lifft_complex_t* tmp = (lifft_complex_t*)alloca(n/2*sizeof(lifft_complex_t));
@@ -139,17 +153,7 @@ void lifft_forward_real(lifft_float_t* x_in, size_t stride_in, lifft_complex_t* 
 	// Copy as [evens + odds*im]
 	for(size_t i = 0; i < n/2; i++) tmp[_lifft_rev_bits24(i, bits)] = lifft_complex(x_in[(2*i + 0)*stride_in]/2, x_in[(2*i + 1)*stride_in]/2);
 	_lifft_process(tmp, n/2);
-	
-	lifft_complex_t w = lifft_complex(0, -1), wm = lifft_cispi((lifft_float_t)-2.0/n);
-	for(size_t i = 0; i <= n/4; i++){
-		// Unpack using even/odd fft symmetry
-		lifft_complex_t p = tmp[i], q = lifft_conj(tmp[-i & (n/2 - 1)]);
-		lifft_complex_t xe = lifft_cadd(p, q), xo = lifft_cmul(lifft_csub(p, q), w);
-		// Apply final stage of Cooley Tukey
-		x_out[i*stride_out] = lifft_cadd(xe, xo);
-		x_out[(n/2 - i)*stride_out] = lifft_conj(lifft_csub(xe, xo));
-		w = lifft_cmul(w, wm);
-	}
+	_lifft_extract_real(tmp, x_out, stride_out, n);
 }
 
 void lifft_inverse_real(lifft_complex_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n){
@@ -161,10 +165,11 @@ void lifft_inverse_real(lifft_complex_t* x_in, size_t stride_in, lifft_float_t* 
 		// Calculate evens/odds from real fft symmetry
 		lifft_complex_t p = x_in[i*stride_in], q = lifft_conj(x_in[(n/2 - i)*stride_in]);
 		lifft_complex_t xe = lifft_cadd(p, q), xo = lifft_cmul(lifft_csub(p, q), w);
+		w = lifft_cmul(w, wm);
+		
 		// Pack using even/odd symetry
 		tmp[_lifft_rev_bits24(i, bits)] = lifft_conj(lifft_cadd(xe, xo));
 		tmp[_lifft_rev_bits24(-i & (n/2 - 1), bits)] = lifft_csub(xe, xo);
-		w = lifft_cmul(w, wm);
 	}
 	
 	_lifft_process(tmp, n/2);
@@ -177,50 +182,51 @@ void lifft_inverse_real(lifft_complex_t* x_in, size_t stride_in, lifft_float_t* 
 }
 
 void lifft_forward_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n){
-	lifft_float_t tmp[n];
-	for(unsigned i = 0; i < n/2; i++){
-		tmp[i] = x_in[(2*i)*stride_in];
-		tmp[n/2 + i] = x_in[(n - 2*i - 1)*stride_in];
+	unsigned bits = _lifft_setup(n, stride_in, stride_out) - 1;
+	lifft_complex_t* tmp = (lifft_complex_t*)alloca(n/2*sizeof(lifft_complex_t));
+	
+	// To calculate the DCT II, you need to double and mirror x_in, BUT!
+	// That means evens and odds are mirrored, so you can compute the other via symmetry.
+	for(size_t i = 0; i < n/4; i++){
+		tmp[_lifft_rev_bits24(i, bits)] = lifft_complex(x_in[(4*i + 0)*stride_in], x_in[(4*i + 2)*stride_in]);
+		tmp[_lifft_rev_bits24(n/2 - i - 1, bits)] = lifft_complex(x_in[(4*i + 3)*stride_in], x_in[(4*i + 1)*stride_in]);
 	}
 	
-	lifft_complex_t Xe[n/2 + 1];
-	lifft_forward_real(tmp, 1, Xe, 1, n);
+	// Compute the real fft
+	_lifft_process(tmp, n/2);
+	_lifft_extract_real(tmp, tmp, 1, n);
 	
+	// Compute the DCT II from the FFT
 	lifft_complex_t w = lifft_complex(1, 0), wm = lifft_cispi((lifft_float_t)-0.5/n);
-	for(unsigned i = 0; i <= n/2; i++){
-		lifft_complex_t p = lifft_cmul(Xe[i], w);
-		x_out[(-i&(n - 1))*stride_out] = -2*lifft_cimag(p);
-		x_out[i*stride_out] = 2*lifft_creal(p);
+	for(size_t i = 0; i <= n/2; i++){
+		lifft_complex_t p = lifft_cmul(tmp[i], w);
 		w = lifft_cmul(w, wm);
+		
+		x_out[(-i&(n - 1))*stride_out] = -lifft_cimag(p);
+		x_out[i*stride_out] = lifft_creal(p);
 	}
 }
 
 void lifft_inverse_dct(lifft_float_t* x_in, size_t stride_in, lifft_float_t* x_out, size_t stride_out, size_t n){
 	unsigned bits = _lifft_setup(n, stride_in, stride_out);
-	lifft_complex_t* tmp = (lifft_complex_t*)alloca(n*sizeof(lifft_complex_t));
+	lifft_complex_t* tmp = (lifft_complex_t*)alloca((n/2 + 1)*sizeof(lifft_complex_t));
 	
-	// Pack the DCT2 data using... lots of math.
-	lifft_complex_t wm = lifft_cispi((lifft_float_t)0.5/n), w = wm;
-	for(size_t i = 1; i < n/2; i++){
-		lifft_complex_t w3 = lifft_cmul(lifft_cmul(w, w), w);
-		lifft_complex_t X0 = lifft_complex(x_in[stride_in*i], 0), X1 = lifft_complex(0, -x_in[stride_in*(-i & (n - 1))]);
-		lifft_complex_t Xe = lifft_cmul(lifft_cadd(X0, X1), w), Xo = lifft_cmul(lifft_csub(X0, X1), w3);
-		tmp[_lifft_rev_bits24( i, bits)] = lifft_complex(lifft_creal(Xe) - lifft_cimag(Xo), -lifft_cimag(Xe) - lifft_creal(Xo));
-		tmp[_lifft_rev_bits24(-i, bits)] = lifft_complex(lifft_creal(Xe) + lifft_cimag(Xo), +lifft_cimag(Xe) - lifft_creal(Xo));
+	lifft_complex_t wm = lifft_cispi((lifft_float_t)0.5/n), w = lifft_complex(0.5, 0);
+	tmp[0] = lifft_cmul(lifft_complex(x_in[0], 0), w);
+	w = lifft_cmul(w, wm);
+	for(size_t i = 1; i <= n/2; i++){
+		tmp[i] = lifft_cmul(lifft_complex(x_in[i*stride_in], -x_in[(n - i)*stride_in]), w);
 		w = lifft_cmul(w, wm);
 	}
 	
-	// Fill in the special cases.
-	float x0 = x_in[0], x1 = x_in[stride_in*n/2]*_LIFFT_SQRT_2;
-	tmp[0] = lifft_complex(x0, -x0);
-	tmp[1] = lifft_complex(x1,  x1);
+	lifft_float_t xe[n];
+	lifft_inverse_real(tmp, 1, xe, 1, n);
 	
-	_lifft_process(tmp, n);
-	
-	// Unpack results.
-	for(size_t i = 0; i < n/2; i++){
-		x_out[stride_out*(2*i + 0)] = +lifft_creal(tmp[i])*((lifft_float_t)0.5/n);
-		x_out[stride_out*(2*i + 1)] = -lifft_cimag(tmp[i])*((lifft_float_t)0.5/n);
+	for(size_t i = 0; i < n/4; i++){
+		x_out[(4*i + 0)*stride_out] = xe[2*i + 0];
+		x_out[(4*i + 1)*stride_out] = xe[n - 2*i - 1];
+		x_out[(4*i + 2)*stride_out] = xe[2*i + 1];
+		x_out[(4*i + 3)*stride_out] = xe[n - 2*i - 2];
 	}
 }
 

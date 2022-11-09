@@ -1,5 +1,5 @@
 CFLAGS = -g -O0 -Wno-format
-CFLAGS = -O3
+CFLAGS += -O3
 LDLIBS = -lm
 
 default: test
