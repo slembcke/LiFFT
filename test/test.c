@@ -7,6 +7,7 @@
 // #define LIFFT_STD_COMPLEX
 #define LIFFT_IMPLEMENTATION
 #include "../lifft.h"
+#include "../lifft_dct.h"
 
 void fft_it(size_t n, int iterations){
 	lifft_complex_t x0[n], X[n], x1[n];
@@ -16,10 +17,13 @@ void fft_it(size_t n, int iterations){
 	}
 	
 	for(unsigned i = 0; i < iterations; i++){
-		// lifft_forward_real(x0, 2, X, 1, n);
-		// lifft_inverse_real(X, 1, x1, 2, n);
-		lifft_forward_complex(x0, 1, X, 1, n);
-		lifft_inverse_complex(X, 1, x1, 1, n);
+		lifft_complex_t scratch[n];
+		lifft_forward_complex(x0, 1, X, 1, scratch, n);
+		lifft_inverse_complex(X, 1, x1, 1, scratch, n);
+		
+		// lifft_complex_t scratch[n/2];
+		// lifft_forward_real(x0, 2, X, 1, scratch, n);
+		// lifft_inverse_real(X, 1, x1, 2, scratch, n);
 	}
 	
 	double err = 0;
@@ -46,8 +50,9 @@ void dct_it(size_t n, int iterations){
 	for(unsigned i = 0; i < n; i++) x0[i] = (float)rand()/(float)RAND_MAX;
 	
 	for(unsigned i = 0; i < iterations; i++){
-		lifft_forward_dct(x0, 1, X, 1, n);
-		lifft_inverse_dct(X, 1, x1, 1, n);
+		lifft_complex_t scratch[n/2 + 1];
+		lifft_forward_dct(x0, 1, X, 1, scratch, n);
+		lifft_inverse_dct(X, 1, x1, 1, scratch, n);
 	}
 	
 	double err = 0;
@@ -70,17 +75,17 @@ void dct_it_2d(size_t n, int iterations){
 }
 
 int main(int argc, const char* argv[]){
-	int iterations = 1;
+	int iterations = 1000;
 	
 	fft_it(32, iterations);
 	fft_it(1 << 16, iterations);
-	fft_it_2d(8, iterations);
-	fft_it_2d(1 << 8, iterations);
+	// fft_it_2d(8, iterations);
+	// fft_it_2d(1 << 8, iterations);
 	
-	dct_it(32, iterations);
-	dct_it(1 << 16, iterations);
-	dct_it_2d(32, iterations);
-	dct_it_2d(1 << 8, iterations);
+	// dct_it(32, iterations);
+	// dct_it(1 << 16, iterations);
+	// dct_it_2d(32, iterations);
+	// dct_it_2d(1 << 8, iterations);
 	
 	// unsigned n = 8;
 	// lifft_complex_t x0[n], X[n], x1[n];
