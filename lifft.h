@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <alloca.h>
 
 #ifndef LIFFT_NO_STDLIB
 	#include <math.h>
