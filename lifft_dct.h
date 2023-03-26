@@ -18,8 +18,8 @@ void lifft_forward_dct(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_o
 	// To calculate the DCT II, you need to double and mirror x_in, BUT!
 	// That means evens and odds are mirrored, so you can compute the other via symmetry.
 	for(size_t i = 0; i < n/4; i++){
-		scratch[_lifft_rev_bits24(i, bits)] = lifft_complex(x_in[(4*i + 0)*stride_in], x_in[(4*i + 2)*stride_in]);
-		scratch[_lifft_rev_bits24(n/2 - i - 1, bits)] = lifft_complex(x_in[(4*i + 3)*stride_in], x_in[(4*i + 1)*stride_in]);
+		scratch[_lifft_rev_bits18(i, bits)] = lifft_complex(x_in[(4*i + 0)*stride_in], x_in[(4*i + 2)*stride_in]);
+		scratch[_lifft_rev_bits18(n/2 - i - 1, bits)] = lifft_complex(x_in[(4*i + 3)*stride_in], x_in[(4*i + 1)*stride_in]);
 	}
 	
 	// Compute real valued FFT

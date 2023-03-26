@@ -75,17 +75,17 @@ void dct_it_2d(size_t n, int iterations){
 }
 
 int main(int argc, const char* argv[]){
-	int iterations = 1000;
+	int iterations = 100;
 	
 	fft_it(32, iterations);
 	fft_it(1 << 16, iterations);
-	// fft_it_2d(8, iterations);
-	// fft_it_2d(1 << 8, iterations);
+	fft_it_2d(8, iterations);
+	fft_it_2d(1 << 8, iterations);
 	
-	// dct_it(32, iterations);
-	// dct_it(1 << 16, iterations);
-	// dct_it_2d(32, iterations);
-	// dct_it_2d(1 << 8, iterations);
+	dct_it(32, iterations);
+	dct_it(1 << 16, iterations);
+	dct_it_2d(32, iterations);
+	dct_it_2d(1 << 8, iterations);
 	
 	// unsigned n = 8;
 	// lifft_complex_t x0[n], X[n], x1[n];
