@@ -100,34 +100,13 @@ static inline size_t _lifft_rev_bits18(size_t n, unsigned bits){
 	return rev >> (18 - bits);
 }
 
-static void _lifft_radix2(lifft_complex_t* x, size_t n, size_t stride){
-	lifft_complex_t wm = lifft_cispi(-1/(lifft_float_t)stride);
-	for(size_t i = 0; i < n; i += 2*stride){
-		lifft_complex_t w = lifft_complex(1, 0);
-		for(size_t j = 0; j < stride; j++){
-			lifft_complex_t p = x[i + j + 0*stride], q = lifft_cmul(w, x[i + j + 1*stride]);
-			x[i + j + 0*stride] = lifft_cadd(p, q);
-			x[i + j + 1*stride] = lifft_csub(p, q);
-			w = lifft_cmul(w, wm);
-		}
-	}
-}
-
-// Process a single radix-2 pass of Cooley-Tukey.
-static void _lifft_radix_2_2_0(lifft_complex_t* x, size_t n){
-	for(size_t i = 0; i < n; i += 4){
-		lifft_complex_t s = x[i + 0], t = x[i + 1], p = x[i + 2], q = x[i + 3];
-		x[i + 0] = lifft_complex(s.re + t.re + p.re + q.re, s.im + t.im + p.im + q.im);
-		x[i + 1] = lifft_complex(s.re - t.re + p.im - q.im, s.im - t.im - p.re + q.re);
-		x[i + 2] = lifft_complex(s.re + t.re - p.re - q.re, s.im + t.im - p.im - q.im);
-		x[i + 3] = lifft_complex(s.re - t.re - p.im + q.im, s.im - t.im + p.re - q.re);
-	}
-}
-
-// Combine a pair of radix-2 Cooley-Tukey passes into one to reduce memory bandwidth.
-static void _lifft_radix2_2(lifft_complex_t* x, size_t n, size_t stride){
-	if(stride == 1){
-		// fast path for the first pass.
+// Iteratively apply passes of Cooley-Tukey.
+// 'x' must be shuffled into bit reversed index order, the result will be ordered normally.
+static void _lifft_process(lifft_complex_t* x, size_t n){
+	size_t stride = 1;
+	
+	// Apply a specialized initial pass when n >= 4
+	if(n >= 4){
 		for(size_t i = 0; i < n; i += 4){
 			lifft_complex_t s = x[i + 0], t = x[i + 1], p = x[i + 2], q = x[i + 3];
 			x[i + 0] = lifft_complex(s.re + t.re + p.re + q.re, s.im + t.im + p.im + q.im);
@@ -135,7 +114,12 @@ static void _lifft_radix2_2(lifft_complex_t* x, size_t n, size_t stride){
 			x[i + 2] = lifft_complex(s.re + t.re - p.re - q.re, s.im + t.im - p.im - q.im);
 			x[i + 3] = lifft_complex(s.re - t.re - p.im + q.im, s.im - t.im + p.re - q.re);
 		}
-	} else {
+		
+		stride *= 4;
+	}
+	
+	// Iteratively apply radix-2-2 passes.
+	while(2*stride < n){
 		lifft_complex_t wm1 = lifft_cispi(-1.0/(lifft_float_t)stride);
 		lifft_complex_t wm2 = lifft_cispi(-0.5/(lifft_float_t)stride);
 		for(size_t i = 0; i < n; i += 4*stride){
@@ -158,19 +142,21 @@ static void _lifft_radix2_2(lifft_complex_t* x, size_t n, size_t stride){
 				w2 = lifft_cmul(w2, wm2);
 			}
 		}
+		
+		stride *= 4;
 	}
-}
-
-// Cooley-Tukey FFT algorithm that processes complex signal 'x' in place.
-// 'x' must be shuffled into bit reversed index order, the result will be ordered normally.
-static void _lifft_process(lifft_complex_t* x, size_t n){
-	for(size_t stride = 1; stride < n;){
-		if(2*stride >= n){
-			_lifft_radix2(x, n, stride);
-			stride *= 2;
-		} else {
-			_lifft_radix2_2(x, n, stride);
-			stride *= 4;
+	
+	// Apply a final radix-2 pass if needed.
+	 if(stride < n){
+		lifft_complex_t wm = lifft_cispi(-1/(lifft_float_t)stride);
+		for(size_t i = 0; i < n; i += 2*stride){
+			lifft_complex_t w = lifft_complex(1, 0);
+			for(size_t j = 0; j < stride; j++){
+				lifft_complex_t p = x[i + j + 0*stride], q = lifft_cmul(w, x[i + j + 1*stride]);
+				x[i + j + 0*stride] = lifft_cadd(p, q);
+				x[i + j + 1*stride] = lifft_csub(p, q);
+				w = lifft_cmul(w, wm);
+			}
 		}
 	}
 }
