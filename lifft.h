@@ -109,10 +109,10 @@ static void _lifft_process(lifft_complex_t* x, size_t n){
 	if(n >= 4){
 		for(size_t i = 0; i < n; i += 4){
 			lifft_complex_t s = x[i + 0], t = x[i + 1], p = x[i + 2], q = x[i + 3];
-			x[i + 0] = lifft_complex(s.re + t.re + p.re + q.re, s.im + t.im + p.im + q.im);
-			x[i + 1] = lifft_complex(s.re - t.re + p.im - q.im, s.im - t.im - p.re + q.re);
-			x[i + 2] = lifft_complex(s.re + t.re - p.re - q.re, s.im + t.im - p.im - q.im);
-			x[i + 3] = lifft_complex(s.re - t.re - p.im + q.im, s.im - t.im + p.re - q.re);
+			x[i + 0] = lifft_complex(lifft_creal(s) + lifft_creal(t) + lifft_creal(p) + lifft_creal(q), lifft_cimag(s) + lifft_cimag(t) + lifft_cimag(p) + lifft_cimag(q));
+			x[i + 1] = lifft_complex(lifft_creal(s) - lifft_creal(t) + lifft_cimag(p) - lifft_cimag(q), lifft_cimag(s) - lifft_cimag(t) - lifft_creal(p) + lifft_creal(q));
+			x[i + 2] = lifft_complex(lifft_creal(s) + lifft_creal(t) - lifft_creal(p) - lifft_creal(q), lifft_cimag(s) + lifft_cimag(t) - lifft_cimag(p) - lifft_cimag(q));
+			x[i + 3] = lifft_complex(lifft_creal(s) - lifft_creal(t) - lifft_cimag(p) + lifft_cimag(q), lifft_cimag(s) - lifft_cimag(t) + lifft_creal(p) - lifft_creal(q));
 		}
 		
 		stride *= 4;
@@ -134,7 +134,7 @@ static void _lifft_process(lifft_complex_t* x, size_t n){
 				lifft_complex_t a = lifft_cadd(p, q);
 				lifft_complex_t b = lifft_csub(p, q);
 				lifft_complex_t c = lifft_cmul(lifft_cadd(r, s), w2);
-				lifft_complex_t d = lifft_cmul(lifft_csub(r, s), lifft_complex(w2.im, -w2.re));
+				lifft_complex_t d = lifft_cmul(lifft_csub(r, s), lifft_complex(lifft_cimag(w2), -lifft_creal(w2)));
 				x[idx + 0*stride] = lifft_cadd(a, c);
 				x[idx + 1*stride] = lifft_cadd(b, d);
 				x[idx + 2*stride] = lifft_csub(a, c);
