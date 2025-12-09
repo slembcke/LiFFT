@@ -15,13 +15,11 @@ void lifft_inverse_dct(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_o
 void lifft_forward_dct(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n){
 	unsigned bits = _lifft_setup(n, stride_in, stride_out) - 1;
 	
-	// To calculate the DCT II, you need to double and mirror x_in, BUT!
-	// That means evens and odds are mirrored, so you can compute the other via symmetry.
 	for(size_t i = 0; i < n/4; i++){
 		scratch[_lifft_rev_bits18(i, bits)] = lifft_complex(x_in[(4*i + 0)*stride_in], x_in[(4*i + 2)*stride_in]);
 		scratch[_lifft_rev_bits18(n/2 - i - 1, bits)] = lifft_complex(x_in[(4*i + 3)*stride_in], x_in[(4*i + 1)*stride_in]);
 	}
-	// Compute real valued FFT
+	
 	_lifft_process(scratch, n/2);
 	lifft_complex_t w0 = lifft_complex(0, -1), wm0 = lifft_cispi((lifft_float_t)-2.0/n);
 	lifft_complex_t w1 = lifft_complex(1,  0), wm1 = lifft_cispi((lifft_float_t)-0.5/n);
@@ -41,12 +39,11 @@ void lifft_forward_dct(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_o
 void lifft_inverse_dct(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n){
 	unsigned bits = _lifft_setup(n, stride_in, stride_out) - 1;
 	
-	lifft_float_t p = x_in[0*stride_in]*0.5/n, q = x_in[(n/2)*stride_in]*_LIFFT_SQRT_2_2/n;
+	lifft_float_t p = x_in[0*stride_in]*(lifft_float_t)0.5/n, q = x_in[(n/2)*stride_in]*_LIFFT_SQRT_2_2/n;
 	scratch[0] = lifft_complex(p - q, p + q);
-	// scratch[0] = lifft_complex(0.125, -3);
 	
-	lifft_complex_t wm0 = lifft_cispi(-2.0/n), w0 = wm0;
-	lifft_complex_t wm1 = lifft_cispi(-0.5/n), w1 = lifft_cmul(wm1, lifft_complex(0.5/n, 0));
+	lifft_complex_t wm0 = lifft_cispi((lifft_float_t)-2.0/n), w0 = wm0;
+	lifft_complex_t wm1 = lifft_cispi((lifft_float_t)-0.5/n), w1 = lifft_cmul(wm1, lifft_complex((lifft_float_t)0.5/n, 0));
 	for(int i0 = 1; i0 < n/2; i0++){
 		int i1 = -i0 & (n - 1);
 		lifft_complex_t p = lifft_complex(x_in[(i0      )*stride_in], +x_in[(i1      )*stride_in]);
