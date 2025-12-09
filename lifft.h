@@ -15,6 +15,7 @@
 typedef LIFFT_FLOAT_TYPE lifft_float_t;
 #define _LIFFT_PI ((lifft_float_t)3.14159265358979323846)
 #define _LIFFT_SQRT_2 ((lifft_float_t)1.4142135623730951)
+#define _LIFFT_SQRT_2_2 ((lifft_float_t)0.7071067811865476)
 
 #if defined(LIFFT_STD_COMPLEX)
 	#include <complex.h>
