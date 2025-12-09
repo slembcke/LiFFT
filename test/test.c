@@ -51,8 +51,8 @@ void dct_it(size_t n, int iterations){
 	
 	for(unsigned i = 0; i < iterations; i++){
 		lifft_complex_t scratch[n/2 + 1];
-		lifft_forward_dct(x0, 1, X, 1, scratch, n);
-		lifft_inverse_dct(X, 1, x1, 1, scratch, n);
+		lifft_dct2(x0, 1, X, 1, scratch, n);
+		lifft_dct3(X, 1, x1, 1, scratch, n);
 	}
 	
 	double err = 0;
@@ -65,8 +65,8 @@ void dct_it_2d(size_t n, int iterations){
 	for(unsigned i = 0; i < n*n; i++) x0[i] = (float)rand()/(float)RAND_MAX;
 	
 	for(unsigned i = 0; i < iterations; i++){
-		LIFFT_APPLY_2D(lifft_forward_dct, x0, X, n);
-		LIFFT_APPLY_2D(lifft_inverse_dct, X, x1, n);
+		LIFFT_APPLY_2D(lifft_dct2, x0, X, n);
+		LIFFT_APPLY_2D(lifft_dct3, X, x1, n);
 	}
 	
 	double err = 0;
@@ -94,8 +94,8 @@ int main(int argc, const char* argv[]){
 	// lifft_forward_real(x0, 2, X, 1, n);
 	// lifft_inverse_real(X, 1, x1, 2, n);
 	
-	// lifft_forward_dct((lifft_float_t*)x0, 2, (lifft_float_t*)X, 2, n);
-	// lifft_inverse_dct((lifft_float_t*)X, 2, (lifft_float_t*)x1, 2, n);
+	// lifft_dct2((lifft_float_t*)x0, 2, (lifft_float_t*)X, 2, n);
+	// lifft_dct3((lifft_float_t*)X, 2, (lifft_float_t*)x1, 2, n);
 	
 	// for(unsigned i = 0; i < n; i++){
 	// 	printf("% 2d: %.3f %.3f -> %+.3f%+.3f -> %+.3f%+.3f\n", i, x0[i], X[i], x1[i]);

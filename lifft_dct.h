@@ -1,18 +1,19 @@
-// Compute the forward DCT II.
+// Compute a DCT II.
 // 'x_in' and 'x_out' must be length 'n'.
 // 'scratch' must be length 'n/2'.
 // 'n' must be a power of two.
-void lifft_forward_dct(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n);
+void lifft_dct2(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n);
 
-// Compute the inverse DCT II (DCT III).
+// Compute a DCT III.
+// Scaled to be an exact inverse to lifft_dct2().
 // 'x_in' and 'x_out' must be length 'n'.
-// 'scratch' must be length 'n/2 + 1'.
+// 'scratch' must be length 'n/2'.
 // 'n' must be a power of two.
-void lifft_inverse_dct(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n);
+void lifft_dct3(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n);
 
 #ifdef LIFFT_IMPLEMENTATION
 
-void lifft_forward_dct(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n){
+void lifft_dct2(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n){
 	unsigned bits = _lifft_setup(n, stride_in, stride_out) - 1;
 	
 	for(size_t i = 0; i < n/4; i++){
@@ -35,8 +36,7 @@ void lifft_forward_dct(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_o
 	}
 }
 
-// TODO this is quite the mess. See if I can compute this from the DCT III directly instead.
-void lifft_inverse_dct(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n){
+void lifft_dct3(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n){
 	unsigned bits = _lifft_setup(n, stride_in, stride_out) - 1;
 	
 	lifft_float_t p = x_in[0*stride_in]*(lifft_float_t)0.5/n, q = x_in[(n/2)*stride_in]*_LIFFT_SQRT_2_2/n;
