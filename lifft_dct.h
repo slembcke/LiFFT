@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 Scott Lembcke and Howling Moon Software
+
 // Compute a DCT II.
 // 'x_in' and 'x_out' must be length 'n'.
 // 'scratch' must be length 'n/2'.
@@ -25,7 +28,7 @@ void lifft_dct2(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], s
 	lifft_complex_t w0 = lifft_complex(0, -1), wm0 = lifft_cispi((lifft_float_t)-2.0/n);
 	lifft_complex_t w1 = lifft_complex(1,  0), wm1 = lifft_cispi((lifft_float_t)-0.5/n);
 	for(size_t i0 = 0; i0 < n/2; i0++){
-		int i1 = -i0 & (n/2 - 1);
+		size_t i1 = -i0 & (n/2 - 1);
 		lifft_complex_t p = lifft_cmul(scratch[i0], w1), q = lifft_cmul(lifft_conj(scratch[i1]), w1);
 		lifft_complex_t s = lifft_cadd(p, q), t = lifft_cmul(lifft_csub(p, q), w0);
 		w0 = lifft_cmul(w0, wm0);
@@ -44,8 +47,8 @@ void lifft_dct3(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], s
 	
 	lifft_complex_t wm0 = lifft_cispi((lifft_float_t)-2.0/n), w0 = wm0;
 	lifft_complex_t wm1 = lifft_cispi((lifft_float_t)-0.5/n), w1 = lifft_cmul(wm1, lifft_complex((lifft_float_t)0.5/n, 0));
-	for(int i0 = 1; i0 < n/2; i0++){
-		int i1 = -i0 & (n - 1);
+	for(size_t i0 = 1; i0 < n/2; i0++){
+		size_t i1 = -i0 & (n - 1);
 		lifft_complex_t p = lifft_complex(x_in[(i0      )*stride_in], +x_in[(i1      )*stride_in]);
 		lifft_complex_t q = lifft_complex(x_in[(i1 - n/2)*stride_in], -x_in[(i0 + n/2)*stride_in]);
 		q = lifft_cmul(q, lifft_complex(_LIFFT_SQRT_2_2, _LIFFT_SQRT_2_2));

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 Scott Lembcke and Howling Moon Software
+
 #pragma once
 
 #include <stdint.h>
@@ -121,8 +124,8 @@ static void _lifft_process(lifft_complex_t* x, size_t n){
 	
 	// Iteratively apply radix-2-2 passes.
 	while(2*stride < n){
-		lifft_complex_t wm1 = lifft_cispi(-1.0/(lifft_float_t)stride);
-		lifft_complex_t wm2 = lifft_cispi(-0.5/(lifft_float_t)stride);
+		lifft_complex_t wm1 = lifft_cispi((lifft_float_t)-1.0/stride);
+		lifft_complex_t wm2 = lifft_cispi((lifft_float_t)-0.5/stride);
 		for(size_t i = 0; i < n; i += 4*stride){
 			lifft_complex_t w1 = lifft_complex(1, 0);
 			lifft_complex_t w2 = lifft_complex(1, 0);
