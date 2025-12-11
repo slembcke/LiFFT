@@ -151,7 +151,7 @@ static void _lifft_process(lifft_complex_t* x, size_t n){
 	}
 	
 	// Apply a final radix-2 pass if needed.
-	 if(stride < n){
+	 while(stride < n){
 		lifft_complex_t wm = lifft_cispi(-1/(lifft_float_t)stride);
 		for(size_t i = 0; i < n; i += 2*stride){
 			lifft_complex_t w = lifft_complex(1, 0);
@@ -162,6 +162,8 @@ static void _lifft_process(lifft_complex_t* x, size_t n){
 				w = lifft_cmul(w, wm);
 			}
 		}
+		
+		stride *= 2;
 	}
 }
 

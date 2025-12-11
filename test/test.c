@@ -28,7 +28,7 @@ void fft_it(size_t n, int iterations){
 	
 	double err = 0;
 	for(unsigned i = 0; i < n; i++) err += lifft_cabs(lifft_csub(x0[i], x1[i]));
-	printf("err on FFT size %9d: %e\n", (int)n, err);
+	printf("err on FFT    size %9d: %e\n", (int)n, err);
 }
 
 void fft_it_2d(size_t n, int iterations){
@@ -42,25 +42,41 @@ void fft_it_2d(size_t n, int iterations){
 	
 	double err = 0;
 	for(unsigned i = 0; i < n*n; i++) err += lifft_cabs(lifft_csub(x0[i], x1[i]));
-	printf("err on FFT size %3d x %3d: %e\n", (int)n, (int)n, err);
+	printf("err on FFT    size %3d x %3d: %e\n", (int)n, (int)n, err);
 }
 
-void dct_it(size_t n, int iterations){
+void rfft_it(size_t n, int iterations){
+	lifft_float_t x0[n], x1[n];
+	lifft_complex_t X[n/2 + 1];
+	for(unsigned i = 0; i < n; i++) x0[i] = (float)rand()/(float)RAND_MAX;
+	
+	for(unsigned i = 0; i < iterations; i++){
+		lifft_complex_t scratch[n/2];
+		lifft_forward_real(x0, 1, X, 1, scratch, n);
+		lifft_inverse_real(X, 1, x1, 1, scratch, n);
+	}
+	
+	double err = 0;
+	for(unsigned i = 0; i < n; i++) err += fabs(x0[i] - x1[i]);
+	printf("err on rFFT   size %9d: %e\n", (int)n, err);
+}
+
+void dct23_it(size_t n, int iterations){
 	lifft_float_t x0[n], X[n], x1[n];
 	for(unsigned i = 0; i < n; i++) x0[i] = (float)rand()/(float)RAND_MAX;
 	
 	for(unsigned i = 0; i < iterations; i++){
-		lifft_complex_t scratch[n/2 + 1];
+		lifft_complex_t scratch[n/2];
 		lifft_dct2(x0, 1, X, 1, scratch, n);
 		lifft_dct3(X, 1, x1, 1, scratch, n);
 	}
 	
 	double err = 0;
 	for(unsigned i = 0; i < n; i++) err += fabs(x0[i] - x1[i]);
-	printf("err on DCT size %9d: %e\n", (int)n, err);
+	printf("err on DCT2/3 size %9d: %e\n", (int)n, err);
 }
 
-void dct_it_2d(size_t n, int iterations){
+void dct23_it_2d(size_t n, int iterations){
 	lifft_float_t x0[n*n], X[n*n], x1[n*n];
 	for(unsigned i = 0; i < n*n; i++) x0[i] = (float)rand()/(float)RAND_MAX;
 	
@@ -71,21 +87,73 @@ void dct_it_2d(size_t n, int iterations){
 	
 	double err = 0;
 	for(unsigned i = 0; i < n*n; i++) err += fabs(x0[i] - x1[i]);
-	printf("err on DCT size %3d x %3d: %e\n", (int)n, (int)n, err);
+	printf("err on DCT2/3 size %3d x %3d: %e\n", (int)n, (int)n, err);
+}
+
+void dct4_it(size_t n, int iterations){
+	lifft_float_t x0[n], X[n], x1[n];
+	for(unsigned i = 0; i < n; i++) x0[i] = (float)rand()/(float)RAND_MAX;
+	
+	for(unsigned i = 0; i < iterations; i++){
+		lifft_complex_t scratch[n/2];
+		lifft_dct4(x0, 1, X, 1, scratch, n);
+		lifft_dct4(X, 1, x1, 1, scratch, n);
+	}
+	
+	double err = 0;
+	for(unsigned i = 0; i < n; i++) err += fabs(x0[i] - x1[i]);
+	printf("err on DCT4   size %9d: %e\n", (int)n, err);
+}
+
+void dct4_it_2d(size_t n, int iterations){
+	lifft_float_t x0[n*n], X[n*n], x1[n*n];
+	for(unsigned i = 0; i < n*n; i++) x0[i] = (float)rand()/(float)RAND_MAX;
+	
+	for(unsigned i = 0; i < iterations; i++){
+		LIFFT_APPLY_2D(lifft_dct4, x0, X, n);
+		LIFFT_APPLY_2D(lifft_dct4, X, x1, n);
+	}
+	
+	double err = 0;
+	for(unsigned i = 0; i < n*n; i++) err += fabs(x0[i] - x1[i]);
+	printf("err on DCT4   size %3d x %3d: %e\n", (int)n, (int)n, err);
 }
 
 int main(int argc, const char* argv[]){
-	int iterations = 100;
+	// static const int n = 8;
+	// lifft_float_t x[] = {0, 8, -5, 1, -1, 9, -7, -7, 9, -7, 1, 4, -7, -3, -4, 2};
+	// lifft_float_t X[n];
+	// lifft_complex_t scratch[n/2];
+	// float coef = 1;
+	// // coef = 1/sqrt(128); // 16
+	// // coef = 1.0/sqrt(64); // 8
+	// // coef = 1/sqrt(8*n); // 4
+	// lifft_dct4(x, 1, X, 1, scratch, n);
+	// // for(int i = 0; i < n; i++) X[i] *= coef;
+	// lifft_dct4(X, 1, X, 1, scratch, n);
+	// // for(int i = 0; i < n; i++) X[i] *= coef;
+	// for(int i = 0; i < n; i++) printf("%8.3f\n", X[i]/x[i]);
+	// return EXIT_SUCCESS;
+	
+	int iterations = 1;
 	
 	fft_it(32, iterations);
 	fft_it(1 << 16, iterations);
-	fft_it_2d(8, iterations);
+	fft_it_2d(32, iterations);
 	fft_it_2d(1 << 8, iterations);
 	
-	dct_it(32, iterations);
-	dct_it(1 << 16, iterations);
-	dct_it_2d(32, iterations);
-	dct_it_2d(1 << 8, iterations);
+	rfft_it(32, iterations);
+	rfft_it(1 << 16, iterations);
+	
+	dct23_it(32, iterations);
+	dct23_it(1 << 16, iterations);
+	dct23_it_2d(32, iterations);
+	dct23_it_2d(1 << 8, iterations);
+	
+	dct4_it(32, iterations);
+	dct4_it(1 << 16, iterations);
+	dct4_it_2d(32, iterations);
+	dct4_it_2d(1 << 8, iterations);
 	
 	// unsigned n = 8;
 	// lifft_complex_t x0[n], X[n], x1[n];
