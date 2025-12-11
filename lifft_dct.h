@@ -1,18 +1,25 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Scott Lembcke and Howling Moon Software
 
-// Compute a DCT II.
+// Compute a DCT-II.
 // 'x_in' and 'x_out' must be length 'n'.
 // 'scratch' must be length 'n/2'.
 // 'n' must be a power of two.
 void lifft_dct2(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n);
 
-// Compute a DCT III.
+// Compute a DCT-III.
 // Scaled to be an exact inverse to lifft_dct2().
 // 'x_in' and 'x_out' must be length 'n'.
 // 'scratch' must be length 'n/2'.
 // 'n' must be a power of two.
 void lifft_dct3(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n);
+
+// Compute a DCT-IV.
+// Scaled to be it's exact inverse.
+// 'x_in' and 'x_out' must be length 'n'.
+// 'scratch' must be length 'n/2'.
+// 'n' must be a power of two.
+void lifft_dct4(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n);
 
 #ifdef LIFFT_IMPLEMENTATION
 
