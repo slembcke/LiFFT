@@ -23,6 +23,9 @@ void lifft_dct4(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], s
 
 #ifdef LIFFT_IMPLEMENTATION
 
+#define _LIFFT_SQRT_2_2 ((lifft_float_t)0.7071067811865476)
+#define _LIFFT_CISPI_1_4 lifft_complex(_LIFFT_SQRT_2_2, -_LIFFT_SQRT_2_2)
+
 void lifft_dct2(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], size_t stride_out, lifft_complex_t scratch[], size_t n){
 	unsigned bits = _lifft_setup(n, stride_in, stride_out) - 1;
 	
@@ -42,7 +45,7 @@ void lifft_dct2(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], s
 		w0 = lifft_cmul(w0, wm0);
 		
 		x_out[(i0      )*stride_out] = lifft_creal(lifft_cadd(s, t));
-		x_out[(i0 + n/2)*stride_out] = lifft_creal(lifft_cmul(lifft_csub(s, t), lifft_complex(_LIFFT_SQRT_2_2, -_LIFFT_SQRT_2_2)));
+		x_out[(i0 + n/2)*stride_out] = lifft_creal(lifft_cmul(lifft_csub(s, t), _LIFFT_CISPI_1_4));
 		w1 = lifft_cmul(w1, wm1);
 	}
 }
@@ -102,7 +105,7 @@ void lifft_dct4(lifft_float_t x_in[], size_t stride_in, lifft_float_t x_out[], s
 		w0 = lifft_cmul(w0, wm0);
 		
 		x_out[(i0      )*stride_out] = lifft_creal(lifft_cmul(lifft_cadd(s, t), w1));
-		x_out[(i0 + n/2)*stride_out] = lifft_creal(lifft_cmul(lifft_csub(s, t), lifft_cmul(w1, lifft_complex(_LIFFT_SQRT_2_2, -_LIFFT_SQRT_2_2))));
+		x_out[(i0 + n/2)*stride_out] = lifft_creal(lifft_cmul(lifft_csub(s, t), lifft_cmul(w1, _LIFFT_CISPI_1_4)));
 		w1 = lifft_cmul(w1, wm1);
 	}
 }
